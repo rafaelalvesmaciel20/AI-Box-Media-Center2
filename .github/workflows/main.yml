@@ -1,26 +1,46 @@
 
-android {
-    namespace = "com.aibox.mediacenter"
-    compileSdk = 35
+name: Build AI Box Media Center APK
 
-    defaultConfig {
-        applicationId = "com.aibox.mediacenter"
-        minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
-    }
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
-    buildFeatures {
-        buildConfig = true
-    }
+permissions:
+  contents: read
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android SDK packages
+        run: |
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Build debug APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Box-Media-Center-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
