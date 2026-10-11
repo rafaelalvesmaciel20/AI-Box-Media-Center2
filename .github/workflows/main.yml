@@ -1,49 +1,26 @@
-name: Build AI Box Media Center APK
 
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
+android {
+    namespace = "com.aibox.mediacenter"
+    compileSdk = 35
 
-permissions:
-  contents: read
+    defaultConfig {
+        applicationId = "com.aibox.mediacenter"
+        minSdk = 26
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0.0"
+    }
 
-jobs:
-  build:
-    runs-on: ubuntu-24.04
+    buildFeatures {
+        buildConfig = true
+    }
 
-    steps:
-      - name: Baixar o código
-        uses: actions/checkout@v4
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
 
-      - name: Configurar Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Configurar Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-
-      - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: ''
-
-      - name: Aceitar licenças e instalar SDK
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Compilar APK
-        run: gradle --no-daemon :app:assembleDebug --stacktrace
-
-      - name: Disponibilizar APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: AI-Box-Media-Center-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
