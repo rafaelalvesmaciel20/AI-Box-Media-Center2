@@ -1,19 +1,59 @@
 
-      - name: Locate Android project and build APK
-        run: |
-          echo "Arquivos na raiz:"
-          ls -la
+name: Build AI Box Media Center APK
 
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-            ./gradlew --no-daemon assembleDebug
-          elif [ -f "./app/gradlew" ]; then
-            cd app
-            chmod +x ./gradlew
-            ./gradlew --no-daemon assembleDebug
-          else
-            echo "ERRO: Gradle Wrapper não encontrado."
-            echo "Verifique se gradlew e os arquivos Gradle foram enviados ao GitHub."
-            find . -maxdepth 4 \( -name gradlew -o -name settings.gradle -o -name settings.gradle.kts \) -print
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Find Gradle Wrapper
+        id: locate
+        shell: bash
+        run: |
+          find . -maxdepth 6 -type f -name gradlew -print
+          WRAPPER="$(find . -maxdepth 6 -type f -name gradlew | head -n 1)"
+          if [ -z "$WRAPPER" ]; then
+            echo "Gradle Wrapper não encontrado no repositório."
             exit 1
           fi
+          PROJECT_DIR="$(dirname "$WRAPPER")"
+          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+          chmod +x "$WRAPPER"
+
+      - name: Build debug APK
+        run: |
+          cd "${{ steps.locate.outputs.project_dir }}"
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Box-Media-Center-debug-apk
+          path: "**/build/outputs/apk/debug/*.apk"
+          if-no-files-found: error
