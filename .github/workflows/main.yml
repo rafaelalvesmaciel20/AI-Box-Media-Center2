@@ -1,20 +1,19 @@
 
       - name: Locate Android project and build APK
-        shell: bash
         run: |
-          echo "Procurando o Gradle Wrapper..."
-          find . -maxdepth 5 -type f -name gradlew -print
+          echo "Arquivos na raiz:"
+          ls -la
 
-          WRAPPER="$(find . -maxdepth 5 -type f -name gradlew | head -n 1)"
-
-          if [ -z "$WRAPPER" ]; then
-            echo "ERRO: gradlew não foi encontrado."
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew --no-daemon assembleDebug
+          elif [ -f "./app/gradlew" ]; then
+            cd app
+            chmod +x ./gradlew
+            ./gradlew --no-daemon assembleDebug
+          else
+            echo "ERRO: Gradle Wrapper não encontrado."
+            echo "Verifique se gradlew e os arquivos Gradle foram enviados ao GitHub."
+            find . -maxdepth 4 \( -name gradlew -o -name settings.gradle -o -name settings.gradle.kts \) -print
             exit 1
           fi
-
-          PROJECT_DIR="$(dirname "$WRAPPER")"
-          echo "Projeto encontrado em: $PROJECT_DIR"
-
-          cd "$PROJECT_DIR"
-          chmod +x ./gradlew
-          ./gradlew --no-daemon assembleDebug
