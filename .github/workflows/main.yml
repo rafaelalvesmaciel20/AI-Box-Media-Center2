@@ -1,46 +1,20 @@
 
-name: Build AI Box Media Center APK
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: read
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Install Android SDK packages
+      - name: Locate Android project and build APK
+        shell: bash
         run: |
-          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMANAGER" --licenses || true
-          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          echo "Procurando o Gradle Wrapper..."
+          find . -maxdepth 5 -type f -name gradlew -print
 
-      - name: Build debug APK
-        run: |
+          WRAPPER="$(find . -maxdepth 5 -type f -name gradlew | head -n 1)"
+
+          if [ -z "$WRAPPER" ]; then
+            echo "ERRO: gradlew não foi encontrado."
+            exit 1
+          fi
+
+          PROJECT_DIR="$(dirname "$WRAPPER")"
+          echo "Projeto encontrado em: $PROJECT_DIR"
+
+          cd "$PROJECT_DIR"
           chmod +x ./gradlew
           ./gradlew --no-daemon assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: AI-Box-Media-Center-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
