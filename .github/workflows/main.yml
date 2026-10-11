@@ -28,15 +28,17 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-          
+
       - name: Install Android SDK
+        shell: bash
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-        - name: Locate project and build APK
+      - name: Locate project and build APK
         shell: bash
         run: |
+          echo "Procurando settings.gradle..."
           SETTINGS="$(find . -maxdepth 6 -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)"
 
           if [ -z "$SETTINGS" ]; then
@@ -46,8 +48,7 @@ jobs:
           fi
 
           PROJECT_DIR="$(dirname "$SETTINGS")"
-          echo "Projeto Android encontrado em: $PROJECT_DIR"
-
+          echo "Projeto encontrado em: $PROJECT_DIR"
           gradle -p "$PROJECT_DIR" --no-daemon assembleDebug
 
       - name: Upload APK
