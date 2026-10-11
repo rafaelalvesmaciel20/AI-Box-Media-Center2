@@ -26,30 +26,29 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-
+        with:
+          gradle-version: "8.9"
+          
       - name: Install Android SDK
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Find Gradle Wrapper
-        id: locate
+        - name: Locate project and build APK
         shell: bash
         run: |
-          find . -maxdepth 6 -type f -name gradlew -print
-          WRAPPER="$(find . -maxdepth 6 -type f -name gradlew | head -n 1)"
-          if [ -z "$WRAPPER" ]; then
-            echo "Gradle Wrapper não encontrado no repositório."
+          SETTINGS="$(find . -maxdepth 6 -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)"
+
+          if [ -z "$SETTINGS" ]; then
+            echo "ERRO: settings.gradle não foi encontrado."
+            find . -maxdepth 4 -type f -print
             exit 1
           fi
-          PROJECT_DIR="$(dirname "$WRAPPER")"
-          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
-          chmod +x "$WRAPPER"
 
-      - name: Build debug APK
-        run: |
-          cd "${{ steps.locate.outputs.project_dir }}"
-          ./gradlew --no-daemon assembleDebug
+          PROJECT_DIR="$(dirname "$SETTINGS")"
+          echo "Projeto Android encontrado em: $PROJECT_DIR"
+
+          gradle -p "$PROJECT_DIR" --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
